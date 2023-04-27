@@ -729,8 +729,37 @@ void KeyFrameDatabase::DetectNBestCandidates(KeyFrame *pKF, vector<KeyFrame*> &v
     }
 }
 
+void KeyFrameDatabase::PreSave()
+{
+    //Save the information about the inverted index of KF to node
+    mvBackupInvertedFileId.resize(mvInvertedFile.size());
+    for(int i = 0, numEl = mvInvertedFile.size(); i < numEl; ++i)
+    {
+        for(std::list<KeyFrame*>::const_iterator it = mvInvertedFile[i].begin(), end = mvInvertedFile[i].end(); it != end; ++it)
+        {
+            mvBackupInvertedFileId[i].push_back((*it)->mnId);
+        }
+    }
+}
 
-vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F, Map* pMap)
+void KeyFrameDatabase::PostLoad(map<long unsigned int, KeyFrame*> mpKFid)
+{
+    mvInvertedFile.clear();
+    mvInvertedFile.resize(mpVoc->size());
+    for(unsigned int i = 0; i < mvBackupInvertedFileId.size(); ++i)
+    {
+        for(long unsigned int KFid : mvBackupInvertedFileId[i])
+        {
+            if(mpKFid.find(KFid) != mpKFid.end())
+            {
+                mvInvertedFile[i].push_back(mpKFid[KFid]);
+            }
+        }
+    }
+
+}
+
+vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame* F, Map* pMap)
 {
     list<KeyFrame*> lKFsSharingWords;
 
@@ -854,4 +883,11 @@ void KeyFrameDatabase::SetORBVocabulary(ORBVocabulary* pORBVoc)
     mvInvertedFile.resize(mpVoc->size());
 }
 
-} //namespace ORB_SLAM
+void KeyFrameDatabase::SetORBVocabularyPostLoad(const ORBVocabulary &voc)
+{   
+    //Set ORB Vocabulary Post Load
+    //mvInvertedFile is kept untouched
+    mpVoc= &voc;
+}
+
+    } //namespace ORB_SLAM

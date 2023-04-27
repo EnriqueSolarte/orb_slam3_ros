@@ -81,6 +81,7 @@ public:
     void PreSave();
     void PostLoad(map<long unsigned int, KeyFrame*> mpKFid);
     void SetORBVocabulary(ORBVocabulary* pORBVoc);
+   void SetORBVocabularyPostLoad(const ORBVocabulary &voc);
 
 protected:
 

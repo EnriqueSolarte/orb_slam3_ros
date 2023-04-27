@@ -120,16 +120,16 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     }
     cout << "Vocabulary loaded!" << endl << endl;
 
-    //Create KeyFrame Database
-    mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
-
-    bool loadedAtlas = false;
+    
+    // bool loadedAtlas = false;
     if(mStrLoadAtlasFromFile.empty())
     {
         //Create the Atlas
         cout << "Initialization of Atlas from scratch " << endl;
+        // Create KeyFrame Database
+        mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
         mpAtlas = new Atlas(0);
-    }
+        }
     else
     {
         // Load the file with an earlier session
@@ -142,20 +142,40 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
             cout << "Error to load the file, please try with other session file or vocabulary file" << endl;
             exit(-1);
         }
-        //mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
+        mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
 
+        // mpKeyFrameDatabase->SetORBVocabularyPostLoad(*mpVocabulary);
+        // mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
+        mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
+        mpAtlas->SetORBVocabulary(mpVocabulary);
+        mpAtlas->PostLoad();
 
+        bool loadedAtlas = true;
+        mpAtlas->CreateNewMap();
+        
+        // ActivateLocalizationMode();
         //cout << "KF in DB: " << mpKeyFrameDatabase->mnNumKFs << "; words: " << mpKeyFrameDatabase->mnNumWords << endl;
 
-        loadedAtlas = true;
+        // loadedAtlas = true;
 
-        mpAtlas->CreateNewMap();
+        // mpAtlas->CreateNewMap();
 
         //clock_t timeElapsed = clock() - start;
         //unsigned msElapsed = timeElapsed / (CLOCKS_PER_SEC / 1000);
         //cout << "Binary file read in " << msElapsed << " ms" << endl;
 
         //usleep(10*1000*1000);
+        //Set Vocabulary Post Load
+        // mpKeyFrameDatabase->SetORBVocabularyPostLoad(*mpVocabulary);
+        // //Set KFDB and Vocubulary to Atlas
+        // mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
+        // mpAtlas->SetORBVocabulary(mpVocabulary);
+
+        // mpAtlas->PostLoad();
+
+        // bool loadedAtlas = true;
+        // mpAtlas->CreateNewMap();
+            
     }
 
 
@@ -452,7 +472,6 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, 
 
     return Tcw;
 }
-
 
 
 void System::ActivateLocalizationMode()
@@ -1405,8 +1424,8 @@ void System::InsertTrackTime(double& time)
 #endif
 
 bool System::SaveAtlas(int type){
-    try {
-        if(!mStrSaveAtlasToFile.empty())
+    // try {
+    if(!mStrSaveAtlasToFile.empty())
         {
             //clock_t start = clock();
 
@@ -1414,14 +1433,15 @@ bool System::SaveAtlas(int type){
             // cout << "Starting presave operation" << endl;
             mpAtlas->PreSave();
             // cout << "Finished presave operation" << endl;
+            mpKeyFrameDatabase->PreSave();
 
             string pathSaveFileName = "./";
             pathSaveFileName = pathSaveFileName.append(mStrSaveAtlasToFile);
             pathSaveFileName = pathSaveFileName.append(".osa");
 
-            string strVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath,TEXT_FILE);
-            std::size_t found = mStrVocabularyFilePath.find_last_of("/\\");
-            string strVocabularyName = mStrVocabularyFilePath.substr(found+1);
+            // string strVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath,TEXT_FILE);
+            // std::size_t found = mStrVocabularyFilePath.find_last_of("/\\");
+            // string strVocabularyName = mStrVocabularyFilePath.substr(found+1);
 
             if(type == TEXT_FILE) // File text
             {
@@ -1430,9 +1450,10 @@ bool System::SaveAtlas(int type){
                 std::ofstream ofs(pathSaveFileName, std::ios::binary);
                 boost::archive::text_oarchive oa(ofs);
 
-                oa << strVocabularyName;
-                oa << strVocabularyChecksum;
+                // oa << strVocabularyChecksum;
+                // oa << strVocabularyName;
                 oa << mpAtlas;
+                oa << mpKeyFrameDatabase;
                 cout << "End to write the save text file" << endl;
             }
             else if(type == BINARY_FILE) // File binary
@@ -1441,26 +1462,27 @@ bool System::SaveAtlas(int type){
                 std::remove(pathSaveFileName.c_str());
                 std::ofstream ofs(pathSaveFileName, std::ios::binary);
                 boost::archive::binary_oarchive oa(ofs);
-                oa << strVocabularyName;
-                oa << strVocabularyChecksum;
+                // oa << strVocabularyName;
+                // oa << strVocabularyChecksum;
                 oa << mpAtlas;
+                oa << mpKeyFrameDatabase;
                 cout << "End to write save binary file" << endl;
             }
         }
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        return false;
-    } catch (...) {
-        std::cerr << "Unknows exeption" << std::endl;
-        return false;
-    }
+    // } catch (const std::exception &e) {
+    //     std::cerr << e.what() << std::endl;
+    //     return false;
+    // } catch (...) {
+    //     std::cerr << "Unknows exeption" << std::endl;
+    //     return false;
+    // }
 
     return true;
 }
 
 bool System::LoadAtlas(int type)
 {
-    string strFileVoc, strVocChecksum;
+    // string strFileVoc, strVocChecksum;
     bool isRead = false;
 
     string pathLoadFileName = "./";
@@ -1477,15 +1499,16 @@ bool System::LoadAtlas(int type)
             return false;
         }
         boost::archive::text_iarchive ia(ifs);
-        ia >> strFileVoc;
-        ia >> strVocChecksum;
+        // ia >> strFileVoc;
+        // ia >> strVocChecksum;
         ia >> mpAtlas;
+        ia >> mpKeyFrameDatabase;
         cout << "End to load the save text file " << endl;
         isRead = true;
     }
     else if(type == BINARY_FILE) // File binary
     {
-        cout << "Starting to read the save binary file " << pathLoadFileName.c_str() << endl;
+        cout << "Starting to read the saved binary file " << pathLoadFileName.c_str() << endl;
         std::ifstream ifs(pathLoadFileName, std::ios::binary);
         if(!ifs.good())
         {
@@ -1493,33 +1516,41 @@ bool System::LoadAtlas(int type)
             return false;
         }
         boost::archive::binary_iarchive ia(ifs);
-        ia >> strFileVoc;
-        ia >> strVocChecksum;
+        // ia >> strFileVoc;
+        // ia >> strVocChecksum;
         ia >> mpAtlas;
+        ia >> mpKeyFrameDatabase;
         cout << "End to load the save binary file" << endl;
         isRead = true;
     }
+    if (isRead)
+            {
+            return true;
+            }
 
-    if(isRead)
-    {
-        //Check if the vocabulary is the same
-        string strInputVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath,TEXT_FILE);
-
-        if(strInputVocabularyChecksum.compare(strVocChecksum) != 0)
-        {
-            cout << "The vocabulary load isn't the same which the load session was created " << endl;
-            cout << "-Vocabulary name: " << strFileVoc << endl;
-            return false; // Both are differents
-        }
-
-        mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
-        mpAtlas->SetORBVocabulary(mpVocabulary);
-        mpAtlas->PostLoad();
-
-        return true;
-    }
-    return false;
+        return false;
 }
+//     if(isRead)
+//     {
+//         //Check if the vocabulary is the same
+//         string strInputVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath,TEXT_FILE);
+
+//         if(strInputVocabularyChecksum.compare(strVocChecksum) != 0)
+//         {
+//             cout << "The vocabulary load isn't the same which the load session was created " << endl;
+//             cout << "-Vocabulary name: " << strFileVoc << endl;
+//             return false; // Both are differents
+//         }
+
+//         mpKeyFrameDatabase->SetORBVocabularyPostLoad(*mpVocabulary);
+//         mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
+//         mpAtlas->SetORBVocabulary(mpVocabulary);
+//         mpAtlas->PostLoad();
+//         // cout << "Atlas has been loaded successfully... " << endl;
+//         return true;
+//     }
+//     return false;
+// }
 
 string System::CalculateCheckSum(string filename, int type)
 {
