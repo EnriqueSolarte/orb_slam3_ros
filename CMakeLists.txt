@@ -89,8 +89,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-include(${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/DBoW2/CMakeLists.txt)
-include(${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/g2o/CMakeLists.txt)
+add_subdirectory(${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/DBoW2)
+add_subdirectory(${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/g2o)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/orb_slam3/lib)
 
@@ -159,8 +159,8 @@ target_link_libraries(${PROJECT_NAME}
   ${OpenCV_LIBS}
   ${EIGEN3_LIBS}
   ${Pangolin_LIBRARIES}
-  ${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/DBoW2/lib/libDBoW2.so
-  ${PROJECT_SOURCE_DIR}/orb_slam3/Thirdparty/g2o/lib/libg2o.so
+  DBoW2
+  g2o
   -lboost_system
   -lboost_serialization
   -lcrypto
